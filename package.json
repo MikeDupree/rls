@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cargo build --release",
-    "build:bin": "cargo build --release && cp target/release/rls ~/.local/bin"
+    "build:bin": "cargo build --release && cp target/release/rls ~/.local/bin/mrls"
   },
   "keywords": [],
   "author": "mdupree",
