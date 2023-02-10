@@ -220,26 +220,37 @@ fn format_files_recursive(filepath_glob: &String, level: &u16, max_depth: &u16) 
     let files = glob(filepath_glob.as_str()).expect("Failed to read glob pattern");
     let mut file_count = 0;
     let mut list_output = String::new();
+    println!("current level: {}", level);
+    let mut spacer = String::new();
+    for n in 0..*level {
+        println!("pushing level {}", n);
+        spacer.push_str("-");
+    }
 
     for entry in files {
         match entry {
             Ok(path) => {
                 file_count += 1;
-                list_output.push_str(format!("- {}\n", format_file(&path)).as_str());
+                list_output.push_str(format!("{}{}- {}\n", spacer, level, format_file(&path)).as_str());
                 if !path.is_dir() {
                     continue;
                 }
 
                 let next_level = level + 1;
                 list_output.push_str(
-                    format_files_recursive(format!("{}", &next_level, max_depth).as_str(),
+                    format_files_recursive(
+                        &format!("{}/*", path.file_name().unwrap().to_str().unwrap()),
+                        &next_level,
+                        max_depth,
+                    )
+                    .as_str(),
                 );
             }
             Err(e) => println!("{:?}", e),
         }
     }
 
-    format!("{} {}\n", level, list_output)
+    format!("{} {}\n", spacer, list_output)
 }
 
 fn print_files_recursive(filepath_glob: String) {
