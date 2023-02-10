@@ -131,9 +131,18 @@ fn print_file(path: PathBuf) {
     println!("{}", format_file_git_status(&path))
 }
 
+
+fn is_hidden_file(path: &PathBuf) -> bool {
+    path.file_name().unwrap().to_str().unwrap().chars().next().unwrap() == '.'
+}
+
 fn format_file(path: &PathBuf) -> String {
     if path.is_dir() {
-        return format!("\x1b[{}m  \x1b[0m{}", 93, path.display(),);
+        return format!(
+            "\x1b[{}m  \x1b[0m{}",
+            93,
+            path.file_name().unwrap().to_str().unwrap()
+        );
     }
 
     let mut file_icon = "";
@@ -148,7 +157,12 @@ fn format_file(path: &PathBuf) -> String {
             _ => (),
         }
     }
-    return format!("\x1b[{}m {} \x1b[0m{}", 92, file_icon, path.display());
+    return format!(
+        "\x1b[{}m {} \x1b[0m{}",
+        92,
+        file_icon,
+        path.file_name().unwrap().to_str().unwrap()
+    );
 }
 
 fn format_permissions(path: &PathBuf) -> String {
@@ -186,7 +200,6 @@ fn print_files(filepath_glob: String, opts: CommandOptions) {
     }
 
     if opts.options == String::from("r") {
-        println!("Running Recursive Listing");
         print_files_recursive(filepath_glob);
         return;
     }
@@ -220,18 +233,26 @@ fn format_files_recursive(filepath_glob: &String, level: &u16, max_depth: &u16) 
     let files = glob(filepath_glob.as_str()).expect("Failed to read glob pattern");
     let mut file_count = 0;
     let mut list_output = String::new();
-    println!("current level: {}", level);
     let mut spacer = String::new();
     for n in 0..*level {
-        println!("pushing level {}", n);
-        spacer.push_str("-");
+        let mut output = "  ";
+        if n == *level - 1 {
+            output = " ›";
+        }
+        spacer.push_str(output);
     }
 
     for entry in files {
         match entry {
             Ok(path) => {
+                if is_hidden_file(&path) {
+                    continue;
+                }
+
                 file_count += 1;
-                list_output.push_str(format!("{}{}- {}\n", spacer, level, format_file(&path)).as_str());
+                list_output
+                    .push_str(format!("{}{}\n", spacer, format_file(&path)).as_str());
+
                 if !path.is_dir() {
                     continue;
                 }
@@ -239,18 +260,18 @@ fn format_files_recursive(filepath_glob: &String, level: &u16, max_depth: &u16) 
                 let next_level = level + 1;
                 list_output.push_str(
                     format_files_recursive(
-                        &format!("{}/*", path.file_name().unwrap().to_str().unwrap()),
+                        &format!("{}/*", path.display()),
                         &next_level,
                         max_depth,
                     )
                     .as_str(),
                 );
             }
-            Err(e) => println!("{:?}", e),
+            Err(e) => println!("error {:?}", e),
         }
     }
 
-    format!("{} {}\n", spacer, list_output)
+    format!("{}", list_output)
 }
 
 fn print_files_recursive(filepath_glob: String) {
