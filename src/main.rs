@@ -23,10 +23,10 @@ fn main() {
     let opts = get_args();
     let filepath_glob = format!("{}{}", opts.filepath.as_str(), "*");
 
-    println!(
-        "{} \x1b[96m ({})\x1b[0m",
-        env::current_dir().unwrap().display(),
-        git_branch()
-    );
+    is_git_dir();
+    println!("> \x1b[90m{}\x1b[0m", env::current_dir().unwrap().display(),);
+    if is_git_dir() {
+        println!("\x1b[90m (\x1b[0m{}\x1b[90m )\x1b[0m", git_branch());
+    }
     print_files(filepath_glob, opts);
 }

@@ -1,13 +1,23 @@
 /*
  * Formatters
  */
+use glob::glob;
 use std::process::Command;
 use std::time::SystemTime;
 use std::{fs, io};
 use std::{os::unix::prelude::PermissionsExt, path::PathBuf};
 use users::get_user_by_uid;
 
-pub fn format_git(path: &PathBuf) -> String {
+use crate::display::utils;
+use crate::options::command_options;
+
+pub use command_options::*;
+pub use utils::*;
+
+pub fn format_git(path: &PathBuf, opts: &CommandOptions) -> String {
+    if !opts.git {
+        return String::new();
+    }
     let output = Command::new("/usr/bin/git")
         .arg("status")
         .arg(path.file_name().unwrap())
@@ -200,4 +210,52 @@ pub fn format_dir_size(size: u64) -> String {
         "\x1b[95m{}\x1b[0m\x1b[97m{}\x1b[0m",
         size_formatted, size_symbol
     )
+}
+
+pub fn format_files_recursive(filepath_glob: &String, level: &u16, max_depth: &u16, opts: &CommandOptions) -> String {
+    if level >= max_depth {
+        return String::new();
+    }
+
+    let files = glob(filepath_glob.as_str()).expect("Failed to read glob pattern");
+    let mut file_count = 0;
+    let mut list_output = String::new();
+    let mut spacer = String::new();
+    for n in 0..*level {
+        let mut output = "  ";
+        if n == *level - 1 {
+            output = " ›";
+        }
+        spacer.push_str(output);
+    }
+
+    for entry in files {
+        match entry {
+            Ok(path) => {
+                if !opts.show_hidden && is_hidden_file(&path) {
+                    continue;
+                }
+                file_count += 1;
+                list_output.push_str(format!("{}{}\n", spacer, format_file(&path)).as_str());
+
+                if !path.is_dir() {
+                    continue;
+                }
+
+                let next_level = level + 1;
+                list_output.push_str(
+                    format_files_recursive(
+                        &format!("{}/*", path.display()),
+                        &next_level,
+                        max_depth,
+                        opts
+                    )
+                    .as_str(),
+                );
+            }
+            Err(e) => println!("error {:?}", e),
+        }
+    }
+
+    format!("{}", list_output)
 }
