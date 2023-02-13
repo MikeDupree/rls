@@ -11,6 +11,7 @@ pub struct CommandOptions {
     pub detailed: bool,
     pub recursive: bool,
     pub git: bool,
+    pub size: bool,
 }
 
 pub fn get_args() -> CommandOptions {
@@ -38,6 +39,7 @@ pub fn get_args() -> CommandOptions {
         show_hidden: option_flags.clone().contains(&'a'),
         detailed: option_flags.clone().contains(&'l'),
         recursive: option_flags.clone().contains(&'r'),
-        git: is_git_dir()
+        git: is_git_dir(),
+        size: option_flags.clone().contains(&'s'),
     }
 }

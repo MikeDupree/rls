@@ -1,5 +1,6 @@
 use glob::glob;
 use prettytable::{format, row, Table};
+use prettytable::{Cell, Row};
 use std::os::linux::fs::MetadataExt;
 use std::path::PathBuf;
 
@@ -76,14 +77,19 @@ pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
 
     table.set_format(format);
 
-    table.set_titles(row![
-        format_table_header("Name", 90),
-        format_table_header("Git Status", 90),
-        format_table_header("Permissions", 90),
-        format_table_header("Modified", 90),
-        format_table_header("User ID", 90),
-        format_table_header("Size", 90),
-    ]);
+    let mut table_header = vec![
+        Cell::new(format_table_header("Name", 90).as_str()),
+        Cell::new(format_table_header("Git Status", 90).as_str()),
+        Cell::new(format_table_header("Permissions", 90).as_str()),
+        Cell::new(format_table_header("Modified", 90).as_str()),
+        Cell::new(format_table_header("User", 90).as_str()),
+    ];
+
+    if opts.size {
+        table_header.push(Cell::new(format_table_header("Size", 90).as_str()));
+    }
+
+    table.set_titles(Row::new(table_header));
 
     // Create file table rows
     for file in files {
@@ -94,14 +100,20 @@ pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
                 }
 
                 file_count += 1;
-                table.add_row(row![
-                    format_file(&path),
-                    format_git(&path, &opts),
-                    format_permissions(&path),
-                    format_time(path.metadata().unwrap().modified().unwrap()),
-                    format_user_name(path.symlink_metadata().unwrap().st_gid()),
-                    format_dir_size(dir_size(path.into_os_string()).unwrap_or_default()),
-                ]);
+                let mut table_row = vec![
+                    Cell::new(format_file(&path).as_str()),
+                    Cell::new(format_git(&path, &opts).as_str()),
+                    Cell::new(format_permissions(&path).as_str()),
+                    Cell::new(format_time(path.metadata().unwrap().modified().unwrap()).as_str()),
+                    Cell::new(format_user_name(path.symlink_metadata().unwrap().st_gid()).as_str()),
+                ];
+                if opts.size {
+                    table_row.push(Cell::new(
+                        format_dir_size(dir_size(path.into_os_string()).unwrap_or_default())
+                            .as_str(),
+                    ));
+                }
+                table.add_row(Row::new(table_row));
             }
             Err(e) => println!("{:?}", e),
         }
