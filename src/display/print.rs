@@ -60,7 +60,6 @@ pub fn print_files_recursive(filepath_glob: String, opts: CommandOptions) {
 }
 
 pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
-    println!("Detailed listing::");
     let files = glob(filepath_glob.as_str()).expect("Failed to read glob pattern");
     let mut file_count = 0;
     let mut table = Table::new();
@@ -86,17 +85,14 @@ pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
         format_table_header("Size", 90),
     ]);
 
-    println!("loop files::");
     // Create file table rows
     for file in files {
         match file {
             Ok(path) => {
-                println!("-> file ::i is hidden");
                 if !opts.show_hidden && is_hidden_file(&path) {
                     continue;
                 }
 
-                println!("build row output");
                 file_count += 1;
                 table.add_row(row![
                     format_file(&path),
@@ -106,14 +102,10 @@ pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
                     format_user_name(path.symlink_metadata().unwrap().st_gid()),
                     format_dir_size(dir_size(path.into_os_string()).unwrap_or_default()),
                 ]);
-
-                println!("done with file");
             }
             Err(e) => println!("{:?}", e),
         }
     }
-
-    println!("print");
 
     table.printstd();
     println!("Total: {}", file_count);
