@@ -4,11 +4,13 @@ use prettytable::{Cell, Row};
 use std::os::linux::fs::MetadataExt;
 use std::path::PathBuf;
 
+use crate::display::console;
 use crate::display::formatter;
 use crate::display::utils;
 use crate::options::command_options;
 
 pub use command_options::*;
+pub use console::*;
 pub use formatter::*;
 pub use utils::*;
 
@@ -32,8 +34,11 @@ pub fn print_files(filepath_glob: String, opts: CommandOptions) {
 
 pub fn print_files_simple(filepath_glob: String, opts: CommandOptions) {
     let files = glob(filepath_glob.as_str()).expect("Failed to read glob pattern");
+    let console_size = get_console_size();
+
     let mut file_count = 0;
     let mut list_output = String::new();
+    let mut line_len = 0;
 
     for entry in files {
         match entry {
@@ -41,8 +46,20 @@ pub fn print_files_simple(filepath_glob: String, opts: CommandOptions) {
                 if !opts.show_hidden && is_hidden_file(&path) {
                     continue;
                 }
+
                 file_count += 1;
-                list_output.push_str(format!("{}  ", format_file(&path)).as_str())
+
+                let file_output = format_file(&path);
+                let mut prefix = "";
+
+                if line_len + file_output.len() > console_size.0 as usize {
+                    prefix = "\n";
+                    line_len = 0;
+                }
+
+                let formatted_output = format!("{}{}  ", prefix, file_output);
+                line_len += formatted_output.len();
+                list_output.push_str(formatted_output.as_str())
             }
             Err(e) => println!("{:?}", e),
         }
