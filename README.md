@@ -16,6 +16,9 @@ Run the build command
 - `cargo build --release`
 
 Copy the build file into a directory under your PATH
+Be sure to replace `SOME/PATH` with a PATH for your bin files
+
+- `cp target/release/rls SOME/PATH`
 
 If your using a linux os that has `~/.local/bin/` in it's PATH already you can run
 
