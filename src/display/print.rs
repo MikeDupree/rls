@@ -1,6 +1,7 @@
 use glob::glob;
 use prettytable::{format, row, Table};
 use prettytable::{Cell, Row};
+use std::borrow::Borrow;
 use std::os::linux::fs::MetadataExt;
 use std::path::PathBuf;
 
@@ -35,10 +36,34 @@ pub fn print_files(filepath_glob: String, opts: CommandOptions) {
 pub fn print_files_simple(filepath_glob: String, opts: CommandOptions) {
     let files = glob(filepath_glob.as_str()).expect("Failed to read glob pattern");
     let console_size = get_console_size();
-
     let mut file_count = 0;
-    let mut list_output = String::new();
-    let mut line_len = 0;
+    let mut table = Table::new();
+
+    //table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    let format = format::FormatBuilder::new()
+        .column_separator(' ')
+        .borders(' ')
+        .separators(
+            &[format::LinePosition::Top, format::LinePosition::Bottom],
+            format::LineSeparator::new(' ', ' ', ' ', ' '),
+        )
+        .padding(0, 0)
+        .build();
+
+    table.set_format(format);
+
+    let mut table_rows = vec![];
+    let mut table_row = vec![];
+    
+    // Set max cols.
+    // @TODO Get max cols based on console width and filename lengths
+    let mut max_cols = 5;
+    if console_size.0 >= 300 {
+        max_cols = 8;
+    }
+    if console_size.0 <= 150 {
+        max_cols = 3;
+    }
 
     for entry in files {
         match entry {
@@ -48,24 +73,26 @@ pub fn print_files_simple(filepath_glob: String, opts: CommandOptions) {
                 }
 
                 file_count += 1;
-
-                let file_output = format_file(&path);
-                let mut prefix = "";
-
-                if line_len + file_output.len() > console_size.0 as usize {
-                    prefix = "\n";
-                    line_len = 0;
+                table_row.push(Cell::new(format_file(&path).as_str()));
+                if table_row.len() > max_cols {
+                    table_rows.push(Row::new(table_row));
+                    table_row = vec![];
                 }
-
-                let formatted_output = format!("{}{}  ", prefix, file_output);
-                line_len += formatted_output.len();
-                list_output.push_str(formatted_output.as_str())
             }
             Err(e) => println!("{:?}", e),
         }
     }
 
-    println!("\n{}\n\n {} files\n", list_output, file_count);
+    if table_rows.len() <= 0 {
+        table_rows.push(Row::new(table_row));
+    }
+
+    for n in table_rows {
+        table.add_row(n);
+    }
+
+    table.printstd();
+    println!("{} files\n", file_count);
 }
 
 pub fn print_files_recursive(filepath_glob: String, opts: CommandOptions) {
@@ -96,7 +123,6 @@ pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
 
     let mut table_header = vec![
         Cell::new(format_table_header("Name", 90).as_str()),
-        Cell::new(format_table_header("Git Status", 90).as_str()),
         Cell::new(format_table_header("Permissions", 90).as_str()),
         Cell::new(format_table_header("Modified", 90).as_str()),
         Cell::new(format_table_header("User", 90).as_str()),
@@ -119,7 +145,6 @@ pub fn print_files_detailed(filepath_glob: String, opts: CommandOptions) {
                 file_count += 1;
                 let mut table_row = vec![
                     Cell::new(format_file(&path).as_str()),
-                    Cell::new(format_git(&path, &opts).as_str()),
                     Cell::new(format_permissions(&path).as_str()),
                     Cell::new(format_time(path.metadata().unwrap().modified().unwrap()).as_str()),
                     Cell::new(format_user_name(path.symlink_metadata().unwrap().st_gid()).as_str()),
