@@ -10,8 +10,9 @@ fn main() {
     let filepath_glob = format!("{}{}", opts.filepath.as_str(), "*");
 
     println!("> \x1b[90m{}\x1b[0m", env::current_dir().unwrap().display(),);
-    if is_git_dir() {
-        println!("\x1b[90m (\x1b[0m{}\x1b[90m )\x1b[0m", git_branch());
+    if opts.git {
+        // remove git branch output
+        //println!("\x1b[94m (\x1b[0m{}\x1b[90m )\x1b[0m", git_branch());
     }
     print_files(filepath_glob, opts);
 }

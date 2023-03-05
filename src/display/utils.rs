@@ -25,8 +25,9 @@ pub fn is_git_dir() -> bool {
 
 pub fn git_branch() -> String {
     let output = Command::new("/usr/bin/git")
-        .arg("branch")
-        .arg("-l")
+        .arg("rev-parse")
+        .arg("--abbrev-ref")
+        .arg("HEAD")
         .output()
         .expect("failed to execute process");
 
@@ -42,7 +43,7 @@ pub fn git_branch() -> String {
             color = 92;
         }
 
-        output.push_str(format!("\x1b[{}m  {}  \x1b[0m", color, branch.replace("*", "")).as_str())
+        output.push_str(format!("\x1b[{}m  Branch: {}  \x1b[0m", color, branch.replace("*", "")).as_str())
     }
     format!("{}", output)
 }
