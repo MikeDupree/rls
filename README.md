@@ -4,6 +4,8 @@
 
 > looking to rename this as to not get confused with rls (rust language server)
 
+![rls command output](https://github.com/MikeDupree/rls/blob/main/screenshots/rls_output.png)
+
 ### Build from source
 
 Clone the repo:
